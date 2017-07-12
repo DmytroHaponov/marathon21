@@ -5,8 +5,8 @@
 #include <fstream>
 #include <cassert>
 #include <stdint.h>
-//#define CATCH_CONFIG_MAIN 
-//#include "catch.hpp"
+#define CATCH_CONFIG_MAIN 
+#include "catch.hpp"
 
 // Grayscale image, each pixel is 8-bit unsigned value:
 // 0 means black, 255 means white, values between are shades of gray.
@@ -262,21 +262,6 @@ inline bool operator!=(const GrayImage& one, const GrayImage& two)
     return !(one == two);
 }
 
-std::string get_data_str(const GrayImage& image)
-{
-	std::string cur_str;
-	int height = image.getHeight();
-	int width = image.getWidth();
-	for(int cur_height = 0; cur_height < height; ++cur_height)
-	{
-		for (int cur_width = 0; cur_width < width; ++cur_width)
-		{
-			image(cur_height,cur_width) == 0 ? cur_str.append("o") : cur_str.append("x");
-		}
-	}
-	return cur_str;
-}
-
 // You have to implement only function(s) you are asked to implement
 
 // Move each point (y,x) on source image to (y+dy, x+dx) on result image.
@@ -291,29 +276,30 @@ GrayImage translate(const GrayImage& image, int dy, int dx)
 	int width = image.getWidth();
 	int height = image.getHeight();
 	if(std::abs(dx) >= width || std::abs(dy) >= height)
-		return GrayImage(height, width, std::string(width*height, 'x'));
+		return GrayImage(height, width, std::string(width*height, 'o'));
 
-	std::string cur_str = get_data_str(image);
-	int str_size = static_cast<int>(cur_str.length());
-	std::string to_create_from(str_size, 'x');
-	for (int str_pos = 0; str_pos < str_size; ++str_pos)
+	GrayImage result(height, width, std::string(width*height, 'o'));
+	for(int cur_height = 0; cur_height < height; ++cur_height)
 	{
-		int cur_pos = str_pos + dy*width + dx;
-		if (cur_pos >= 0 && cur_pos < str_size)
-			to_create_from.at(cur_pos) = cur_str.at(str_pos);
+		int cur_y = cur_height + dy;
+		if (cur_y >= 0 && cur_y < height)
+		{
+			for (int cur_width = 0; cur_width < width; ++cur_width)
+			{
+				int cur_x = cur_width + dx;
+				if(cur_x >= 0 && cur_x < width)
+					result(cur_y, cur_x) = image(cur_height, cur_width);
+			}
+		}
 	}
-	return GrayImage(height, width, to_create_from);
+	return result;
 }
 
 bool isBinary(const GrayImage& image)
 {
-	//! pity cannot do smth like
-	// return std::all_of(image.data_.begin(), image.data_.end(), [](pixel_t pix){return (pix != 0 && pix != 255);});
-
-	//! is empty image binary? - I think not
 	int height = image.getHeight();
 	int width = image.getWidth();
-
+	//! is empty image binary? - I think not
 	if(!height || !width)
 		return false;
 
@@ -321,7 +307,7 @@ bool isBinary(const GrayImage& image)
 	{
 		for (int cur_width = 0; cur_width < width; ++cur_width)
 		{
-			if(image(cur_height,cur_width) != 0 && image(cur_height,cur_width) != 255)
+			if(image(cur_height, cur_width) != 0 && image(cur_height, cur_width) != 255)
 				return false;
 		}
 	}
@@ -331,17 +317,18 @@ bool isBinary(const GrayImage& image)
 // Set pixels that are less than thr to zero, others to 255
 GrayImage threshold(const GrayImage& image, uint8_t thr)
 {
-	std::string cur_str;
 	int height = image.getHeight();
 	int width = image.getWidth();
+	GrayImage result(height, width);
+
 	for(int cur_height = 0; cur_height < height; ++cur_height)
 	{
 		for (int cur_width = 0; cur_width < width; ++cur_width)
 		{
-			image(cur_height,cur_width) < thr ? cur_str.append("o") : cur_str.append("x");
+			image(cur_height, cur_width) < thr ? result(cur_height, cur_width) = 0 : result(cur_height, cur_width) = 255;
 		}
 	}
-	return GrayImage(height, width, cur_str);
+	return result;
 }
 
 // Should be applied only to binary image
@@ -360,92 +347,92 @@ GrayImage binaryBackground(const GrayImage& image);
 
 
 
-int main(int argc, char *argv[])
+//int main(int argc, char *argv[])
+//{
+//    // TODO: insert your code below
+//	std::string for_im1("xoxxoxxxx");
+//	GrayImage im1(3,3,for_im1);
+//
+//	GrayImage im_trans = translate(im1, 0, -1);
+//
+//	im_trans.print();
+//
+//    return 0;
+//}
+
+TEST_CASE( "is binary" ) 
 {
-    // TODO: insert your code below
 	std::string for_im1("xoxxoxxxx");
 	GrayImage im1(3,3,for_im1);
-
-	GrayImage im_trans = translate(im1, 0, -1);
-
-	im_trans.print();
-
-    return 0;
+	REQUIRE( isBinary(im1) == true );
 }
-//
-//TEST_CASE( "is binary" ) 
-//{
-//	std::string for_im1("xoxxoxxxx");
-//	GrayImage im1(3,3,for_im1);
-//	REQUIRE( isBinary(im1) == true );
-//}
-//
-//TEST_CASE( "is binary for empty" ) 
-//{
-//	GrayImage im1;
-//	REQUIRE( isBinary(im1) == false );
-//}
-//
-//TEST_CASE( "threshold" ) 
-//{
-//	std::string for_im1("xoxxoxxxx");
-//	GrayImage im1(3,3,for_im1);
-//	REQUIRE( threshold(im1, 10) == im1 );
-//}
-//
-//
-//TEST_CASE( "move 3*3 for dx = 1" ) 
-//{
-//	std::string for_im1("xoxxoxxxx");
-//	GrayImage im1(3,3,for_im1);
-//	GrayImage im_trans = translate(im1, 0, 1);
-//	REQUIRE( im_trans == GrayImage(3,3,"xxoxxoxxx") );
-//}
-//
-//TEST_CASE( "move 3*3 for dy = 1" ) 
-//{
-//	std::string for_im1("xoxxoxxxx");
-//	GrayImage im1(3,3,for_im1);
-//	GrayImage im_trans = translate(im1, 1, 0);
-//	REQUIRE( im_trans == GrayImage(3,3,"xxxxoxxox") );
-//}
-//
-//TEST_CASE( "move 3*3 for dx =1 dy = 1" ) 
-//{
-//	std::string for_im1("xoxxoxxxx");
-//	GrayImage im1(3,3,for_im1);
-//	GrayImage im_trans = translate(im1, 1, 1);
-//	REQUIRE( im_trans == GrayImage(3,3,"xxxxxoxxo") );
-//}
-//
-//TEST_CASE( "move 3*3 for dx = -1" ) 
-//{
-//	std::string for_im1("xoxxoxxxx");
-//	GrayImage im1(3,3,for_im1);
-//	GrayImage im_trans = translate(im1, 0, -1);
-//	REQUIRE( im_trans == GrayImage(3,3,"oxxoxxxxx") );
-//}
-//
-//TEST_CASE( "move 3*3 for dx = -1 dy = -1" ) 
-//{
-//	std::string for_im1("xoxxoxxxx");
-//	GrayImage im1(3,3,for_im1);
-//	GrayImage im_trans = translate(im1, -1, -1);
-//	REQUIRE( im_trans == GrayImage(3,3,"oxxxxxxxx") );
-//}
-//
-//TEST_CASE( "move 3*3 for dx = 10" ) 
-//{
-//	std::string for_im1("xoxxoxxxx");
-//	GrayImage im1(3,3,for_im1);
-//	GrayImage im_trans = translate(im1, 0, 10);
-//	REQUIRE( im_trans == GrayImage(3,3,"xxxxxxxxx") );
-//}
-//
-//TEST_CASE( "move 3*3 for dy = 10" ) 
-//{
-//	std::string for_im1("xoxxoxxxx");
-//	GrayImage im1(3,3,for_im1);
-//	GrayImage im_trans = translate(im1, 10, 0);
-//	REQUIRE( im_trans == GrayImage(3,3,"xxxxxxxxx") );
-//}
+
+TEST_CASE( "is binary for empty" ) 
+{
+	GrayImage im1;
+	REQUIRE( isBinary(im1) == false );
+}
+
+TEST_CASE( "threshold" ) 
+{
+	std::string for_im1("xoxxoxxxx");
+	GrayImage im1(3,3,for_im1);
+	REQUIRE( threshold(im1, 10) == im1 );
+}
+
+
+TEST_CASE( "move 3*3 for dx = 1" ) 
+{
+	std::string for_im1("xoxxoxxxx");
+	GrayImage im1(3,3,for_im1);
+	GrayImage im_trans = translate(im1, 0, 1);
+	REQUIRE( im_trans == GrayImage(3,3,"oxooxooxx") );
+}
+
+TEST_CASE( "move 3*3 for dy = 1" ) 
+{
+	std::string for_im1("xoxxoxxxx");
+	GrayImage im1(3,3,for_im1);
+	GrayImage im_trans = translate(im1, 1, 0);
+	REQUIRE( im_trans == GrayImage(3,3,"oooxoxxox") );
+}
+
+TEST_CASE( "move 3*3 for dx =1 dy = 1" ) 
+{
+	std::string for_im1("xoxxoxxxx");
+	GrayImage im1(3,3,for_im1);
+	GrayImage im_trans = translate(im1, 1, 1);
+	REQUIRE( im_trans == GrayImage(3,3,"ooooxooxo") );
+}
+
+TEST_CASE( "move 3*3 for dx = -1" ) 
+{
+	std::string for_im1("xoxxoxxxx");
+	GrayImage im1(3,3,for_im1);
+	GrayImage im_trans = translate(im1, 0, -1);
+	REQUIRE( im_trans == GrayImage(3,3,"oxooxoxxo") );
+}
+
+TEST_CASE( "move 3*3 for dx = -1 dy = -1" ) 
+{
+	std::string for_im1("xoxxoxxxx");
+	GrayImage im1(3,3,for_im1);
+	GrayImage im_trans = translate(im1, -1, -1);
+	REQUIRE( im_trans == GrayImage(3,3,"oxoxxoooo") );
+}
+
+TEST_CASE( "move 3*3 for dx = 10" ) 
+{
+	std::string for_im1("xoxxoxxxx");
+	GrayImage im1(3,3,for_im1);
+	GrayImage im_trans = translate(im1, 0, 10);
+	REQUIRE( im_trans == GrayImage(3,3,"ooooooooo") );
+}
+
+TEST_CASE( "move 3*3 for dy = 10" ) 
+{
+	std::string for_im1("xoxxoxxxx");
+	GrayImage im1(3,3,for_im1);
+	GrayImage im_trans = translate(im1, 10, 0);
+	REQUIRE( im_trans == GrayImage(3,3,"ooooooooo") );
+}
