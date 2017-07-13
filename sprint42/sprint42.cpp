@@ -360,7 +360,7 @@ GrayImage binaryBackground(const GrayImage& image);
 //    return 0;
 //}
 
-TEST_CASE( "is binary" ) 
+TEST_CASE( "is binary for created from string" ) 
 {
 	std::string for_im1("xoxxoxxxx");
 	GrayImage im1(3,3,for_im1);
@@ -435,4 +435,44 @@ TEST_CASE( "move 3*3 for dy = 10" )
 	GrayImage im1(3,3,for_im1);
 	GrayImage im_trans = translate(im1, 10, 0);
 	REQUIRE( im_trans == GrayImage(3,3,"ooooooooo") );
+}
+
+TEST_CASE( "read PGM" ) 
+{
+	GrayImage imPGM;
+	REQUIRE( imPGM.loadFromPGM("../pic1.pgm") == 0 );
+}
+
+TEST_CASE( "NOT binary" ) 
+{
+	GrayImage imPGM;
+	imPGM.loadFromPGM("../pic1.pgm");
+	REQUIRE( isBinary(imPGM) == false );
+}
+
+TEST_CASE( "threshold 255 for NOT binary" ) 
+{
+	GrayImage imPGM;
+	imPGM.loadFromPGM("../pic1.pgm");
+	
+	GrayImage im1(3,3, "ooooooooo");
+	REQUIRE( threshold(imPGM, 255) == im1 );
+}
+
+TEST_CASE( "threshold 0 for NOT binary" ) 
+{
+	GrayImage imPGM;
+	imPGM.loadFromPGM("../pic1.pgm");
+
+	GrayImage im1(3,3, "õõõõõõõõõ");
+	REQUIRE( threshold(imPGM, 0) == im1 );
+}
+
+TEST_CASE( "threshold 53 for NOT binary" ) 
+{
+	GrayImage imPGM;
+	imPGM.loadFromPGM("../pic1.pgm");
+
+	GrayImage im1(3,3, "ooooooõõõ");
+	REQUIRE( threshold(imPGM, 53) == im1 );
 }
