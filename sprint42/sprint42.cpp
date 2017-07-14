@@ -250,6 +250,24 @@ int GrayImage::saveToPGM(const std::string& pathToPGMFile)
 	return 0;
 }
 
+void GrayImage::translateInplace(int dy, int dx)
+{
+	int move_offset = dy*width_ + dx;
+	for (int i = 0; i < data_.size(); ++i)
+	{
+		int source = i - move_offset;
+		int source_y = source / width_;
+		int dest_y = i / width_;
+		if (source < 0 || std::abs(dest_y - source_y) > std::abs(dy) || source >= data_.size())
+		{
+			data_[i] = 0;
+			continue;
+		}
+		else
+			data_[i] = data_[source];
+	}
+}
+
 inline bool operator==(const GrayImage& one, const GrayImage& two)
 {
     return one.height_ == two.height_
@@ -475,4 +493,40 @@ TEST_CASE( "threshold 53 for NOT binary" )
 
 	GrayImage im1(3,3, "ooooooõõõ");
 	REQUIRE( threshold(imPGM, 53) == im1 );
+}
+
+TEST_CASE( "translate in place Binary, dx = -1" ) 
+{
+	GrayImage im1(3, 3, "xoxxoxxxx");
+	im1.translateInplace(0, -1);
+	REQUIRE( im1 == GrayImage(3,3,"oxooxoxxo") );
+}
+
+TEST_CASE( "translate in place Binary, dx = -2" ) 
+{
+	GrayImage im1(3, 3, "xoxxoxxxx");
+	im1.translateInplace(0, -2);
+	REQUIRE( im1 == GrayImage(3,3,"xooxooxoo") );
+}
+
+TEST_CASE( "translate in place Binary, dy = -2" ) 
+{
+	GrayImage im1(3, 3, "xoxxoxxxx");
+	im1.translateInplace(-2, 0);
+	REQUIRE( im1 == GrayImage(3,3,"xxxoooooo") );
+}
+
+TEST_CASE( "translate in place Binary, dx = -2, dy -2" ) 
+{
+	GrayImage im1(3, 3, "xoxxoxxxx");
+	im1.translateInplace(-2, -2);
+	REQUIRE( im1 == GrayImage(3,3,"xoooooooo") );
+}
+
+TEST_CASE( "translate in place Binary, dy = 1" ) 
+{
+	GrayImage im1(3, 3, "xoxxoxxxx");
+	im1.translateInplace(1, 0);
+	im1.print();
+	REQUIRE( im1 == GrayImage(3,3,"oooxoxxox") );
 }
