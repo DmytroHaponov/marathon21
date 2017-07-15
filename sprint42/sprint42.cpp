@@ -250,22 +250,37 @@ int GrayImage::saveToPGM(const std::string& pathToPGMFile)
 	return 0;
 }
 
-void GrayImage::translateInplace(int dy, int dx)
+template <typename iter>
+void doTranslateInplace(int& move_offset, int& dy, int& width_, int last,
+						iter& iter_begin, iter& iter_end)
 {
-	int move_offset = dy*width_ + dx;
-	for (int i = 0; i < data_.size(); ++i)
+	for (iter dest_it = iter_begin; dest_it < iter_end; ++dest_it)
 	{
-		int source = i - move_offset;
+		int dest = std::distance(iter_begin, dest_it);
+		int dest_y = dest / width_;
+		int source = dest + std::abs(move_offset);
 		int source_y = source / width_;
-		int dest_y = i / width_;
-		if (source < 0 || std::abs(dest_y - source_y) > std::abs(dy) || source >= data_.size())
+		
+		if (std::abs(dest_y - source_y) > std::abs(dy) || source < 0 || source >= last)
 		{
-			data_[i] = 0;
+			*dest_it = 0;
 			continue;
 		}
 		else
-			data_[i] = data_[source];
+		{
+			iter source_it = dest_it + std::abs(move_offset);
+			*dest_it = *source_it;
+		}
 	}
+}
+
+void GrayImage::translateInplace(int dy, int dx)
+{
+	int move_offset = dy*width_ + dx;
+	if (move_offset < 0)
+		doTranslateInplace(move_offset, dy, width_, static_cast<int>(data_.size()), data_.begin(), data_.end());
+	else
+		doTranslateInplace(move_offset, dy, width_, static_cast<int>(data_.size()), data_.rbegin(), data_.rend());
 }
 
 inline bool operator==(const GrayImage& one, const GrayImage& two)
