@@ -121,8 +121,8 @@ void GrayImage::print() const
         for (int x = 0; x < width_; ++x)
         {
             uint8_t p = (*this)(y, x);
-            char ch = p == 255 ? 'x' : (p == 0 ? 'o' : '?');
-            std::cout << ch;
+           // char ch = p == 255 ? 'x' : (p == 0 ? 'o' : '?');
+            std::cout << p;
         }
         std::cout << std::endl;
     }
@@ -251,7 +251,7 @@ int GrayImage::saveToPGM(const std::string& pathToPGMFile)
 }
 
 template <typename iter>
-void doTranslateInplace(int& move_offset, int& dy, int& width_, int last,
+void doTranslateInplace(int& move_offset, int& dy, int& width_,
 						iter& iter_begin, iter& iter_end)
 {
 	for (iter dest_it = iter_begin; dest_it < iter_end; ++dest_it)
@@ -261,7 +261,7 @@ void doTranslateInplace(int& move_offset, int& dy, int& width_, int last,
 		int source = dest + std::abs(move_offset);
 		int source_y = source / width_;
 		
-		if (std::abs(dest_y - source_y) > std::abs(dy) || source < 0 || source >= last)
+		if (std::abs(dest_y - source_y) > std::abs(dy) || source < 0 || source >= iter_end - iter_begin)
 		{
 			*dest_it = 0;
 			continue;
@@ -278,9 +278,11 @@ void GrayImage::translateInplace(int dy, int dx)
 {
 	int move_offset = dy*width_ + dx;
 	if (move_offset < 0)
-		doTranslateInplace(move_offset, dy, width_, static_cast<int>(data_.size()), data_.begin(), data_.end());
+		doTranslateInplace(move_offset, dy, width_, data_.begin(), data_.end());
+	else if (move_offset > 0)
+		doTranslateInplace(move_offset, dy, width_, data_.rbegin(), data_.rend());
 	else
-		doTranslateInplace(move_offset, dy, width_, static_cast<int>(data_.size()), data_.rbegin(), data_.rend());
+		return;
 }
 
 inline bool operator==(const GrayImage& one, const GrayImage& two)
@@ -542,6 +544,44 @@ TEST_CASE( "translate in place Binary, dy = 1" )
 {
 	GrayImage im1(3, 3, "xoxxoxxxx");
 	im1.translateInplace(1, 0);
-	im1.print();
 	REQUIRE( im1 == GrayImage(3,3,"oooxoxxox") );
+}
+
+TEST_CASE("translate in place Binary, dx = 1")
+{
+	GrayImage im1(3, 3, "xoxxoxxxx");
+	im1.translateInplace(0, 1);
+	REQUIRE(im1 == GrayImage(3, 3, "oxooxooxx"));
+}
+
+TEST_CASE("translate in place Binary, dx = 1, dy = 1")
+{
+	GrayImage im1(3, 3, "xoxxoxxxx");
+	im1.translateInplace(1, 1);
+	REQUIRE(im1 == GrayImage(3, 3, "ooooxooxo"));
+}
+
+TEST_CASE("translate in place Binary, dx = 2, dy = 2")
+{
+	GrayImage im1(3, 3, "xoxxoxxxx");
+	im1.translateInplace(2, 2);
+	REQUIRE(im1 == GrayImage(3, 3, "oooooooox"));
+}
+
+TEST_CASE("translate in place PGM, dx = -1")
+{
+	GrayImage im1, im2;
+	im1.loadFromPGM("../pic1.pgm");
+	im2.loadFromPGM("../pic1dx-1.pgm");
+	im1.translateInplace(0, -1);
+	REQUIRE(im1 == im2);
+}
+
+TEST_CASE("translate in place PGM, dx = 1, dy = 2")
+{
+	GrayImage im1, im2;
+	im1.loadFromPGM("../pic1.pgm");
+	im2.loadFromPGM("../pic1dx1dy2.pgm");
+	im1.translateInplace(2, 1);
+	REQUIRE(im1 == im2);
 }
